@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="tr" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Giriş – Müzik Türü Tespiti</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+
+  <style>
+    body {
+      background: #f1f3f5;
+      font-family: 'Segoe UI', sans-serif;
+      transition: background 0.4s, color 0.4s;
+      padding-top: 56px;
+    }
+    body[data-theme="dark"] {
+      background: #121212;
+      color: #fff;
+    }
+
+    .navbar {
+      margin-bottom: 50px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+    }
+
+    section {
+      background: #fff;
+      border-radius: 16px;
+      padding: 2rem;
+      margin: 2rem auto 50px;
+      max-width: 520px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.05);
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeInUp 0.6s ease forwards;
+    }
+    body[data-theme="dark"] section {
+      background: #222;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .position-relative { position: relative; }
+
+    .password-toggle {
+      position: absolute;
+      top: 70%;            /* Daha aşağıya */
+      right: 1.5rem;       /* Daha sola */
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #6c757d;
+      padding: 0.3rem;
+      font-size: 1.2rem;   /* Daha görünür ikon */
+      z-index: 10;         /* Diğer öğelerin altında kalmasın */
+    }
+
+
+    .form-control.pe-5 {
+      padding-right: 2.5rem !important;
+    }
+
+    .form-control {
+      border-radius: 0.5rem;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.075);
+    }
+
+    #passwordCriteria {
+      list-style: none;
+      padding-left: 0;
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    #passwordCriteria li {
+      color: #dc3545;
+    }
+
+    #passwordCriteria li.valid {
+      color: #28a745;
+    }
+
+    @media (max-width: 576px) {
+      section {
+        margin: 1rem;
+        padding: 1.5rem;
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body data-theme="light">
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">Müzik Tespiti</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="nav">
+        <ul class="navbar-nav ms-auto align-items-center">
+          <li class="nav-item">
+            <button class="btn btn-link btn-toggle-theme text-white" onclick="toggleTheme()">
+              <i class="bi bi-moon-fill" id="themeIcon"></i>
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Giriş Kartı -->
+  <section id="login">
+    <h2 class="text-center mb-4">Giriş Yap</h2>
+    <form id="loginForm" onsubmit="event.preventDefault(); login();">
+      <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" id="email" class="form-control" placeholder="kullanici@example.com" required />
+      </div>
+      <div class="mb-3 position-relative">
+        <label for="password" class="form-label">Şifre</label>
+        <input
+          type="password"
+          id="password"
+          class="form-control pe-5"
+          placeholder="Şifrenizi girin"
+          required
+          oninput="validatePassword()"
+        />
+        <i class="bi bi-eye password-toggle" id="togglePasswordIcon" onclick="togglePassword()"></i>
+      </div>
+      <ul id="passwordCriteria">
+        <li id="length">En az 8 karakter</li>
+        <li id="upper">En az 1 büyük harf</li>
+        <li id="lower">En az 1 küçük harf</li>
+        <li id="digit">En az 1 rakam</li>
+        <li id="special">En az 1 özel karakter</li>
+      </ul>
+      <button type="submit" class="btn btn-primary w-100 mt-3">
+        <i class="bi bi-box-arrow-in-right me-1"></i> Giriş
+      </button>
+      <div class="text-center mt-3">
+        <small class="text-muted">
+          Hesabınız yok mu?
+          <a href="register.html" class="text-decoration-none">Kayıt olun</a>
+        </small>
+      </div>
+    </form>
+  </section>
+
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const icon = document.getElementById('themeIcon');
+      const isDark = html.getAttribute('data-bs-theme') === 'dark';
+      html.setAttribute('data-bs-theme', isDark ? 'light' : 'dark');
+      document.body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+      icon.className = isDark ? 'bi bi-moon-fill' : 'bi bi-sun-fill';
+    }
+
+    function validatePassword() {
+      const pw = document.getElementById('password').value;
+      const rules = {
+        length: /.{8,}/,
+        upper: /[A-Z]/,
+        lower: /[a-z]/,
+        digit: /\d/,
+        special: /[^A-Za-z0-9]/
+      };
+      Object.entries(rules).forEach(([id, rx]) => {
+        const el = document.getElementById(id);
+        el.classList.toggle('valid', rx.test(pw));
+      });
+
+      const input = document.getElementById('password');
+      const isValid = Object.values(rules).every(rx => rx.test(pw));
+      input.classList.toggle('is-valid', isValid);
+      input.classList.toggle('is-invalid', !isValid);
+    }
+
+    function togglePassword() {
+      const input = document.getElementById('password');
+      const icon = document.getElementById('togglePasswordIcon');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('bi-eye', 'bi-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.replace('bi-eye-slash', 'bi-eye');
+      }
+    }
+
+    function login() {
+      const pw = document.getElementById('password').value;
+      const checks = [/.{8,}/, /[A-Z]/, /[a-z]/, /\d/, /[^A-Za-z0-9]/];
+      if (!checks.every(rx => rx.test(pw))) {
+        alert('Şifre kriterlerine uymalısınız.');
+        return;
+      }
+
+      document.getElementById('loginForm').reset();
+      document.querySelectorAll('#passwordCriteria li').forEach(li => li.classList.remove('valid'));
+      document.getElementById('password').classList.remove('is-valid', 'is-invalid');
+      window.location.href = 'preferences.html';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('section').forEach(sec => {
+        // fadeInUp animasyonu zaten çalışıyor
+      });
+    });
+  </script>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
