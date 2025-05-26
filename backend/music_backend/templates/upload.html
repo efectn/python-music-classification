@@ -61,7 +61,7 @@
 
         <div class="mb-3">
           <label for="audioFileInput" class="form-label">Ses Dosyası Yükle (MP3, WAV, AAC, M4A)</label>
-          <input type="file" id="audioFileInput" class="form-control" accept=".mp3,.wav,.aac,.m4a,audio/*" />
+          <input type="file" id="audioFileInput" class="form-control" accept=".mp3,.wav,.aac,.m4a,.mp4,audio/*" />
         </div>
 
         <div class="mb-3">
@@ -180,6 +180,8 @@
       const recordingStatusEl = document.getElementById('recordingStatus');
       if (mediaRecorder && mediaRecorder.state !== "inactive") {
         mediaRecorder.stop();
+            document.getElementById('youtubeUrlInput').value = '';
+            document.getElementById('audioFileInput').value = '';
       } else {
         recordingStatusEl.textContent = "Aktif bir kayıt bulunmuyor.";
         recordingStatusEl.style.color = "orange";

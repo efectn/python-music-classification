@@ -91,6 +91,7 @@ def download_youtube_audio(url, output_dir='youtube_downloads'):
     random_filename = str(uuid.uuid4())
 
     ydl_opts = {
+        'playlist_items': '1',
         'format': 'bestaudio/best',
         'outtmpl': os.path.join(settings.MEDIA_ROOT, output_dir, f'{random_filename}.%(ext)s'),
         'postprocessors': [{

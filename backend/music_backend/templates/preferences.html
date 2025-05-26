@@ -42,6 +42,8 @@
           <select class="form-select w-50" name="model_type">
             <option value="CNN" {% if request.session.model_type == "CNN" %}selected{% endif %}>CNN Modeli</option>
             <option value="DNN" {% if request.session.model_type == "DNN" %}selected{% endif %}>DNN Modeli</option>
+            <option value="CNNRNN" {% if request.session.model_type == "CNNRNN" %}selected{% endif %}>CNN + RNN Modeli</option>
+            <option value="LSTM" {% if request.session.model_type == "LSTM" %}selected{% endif %}>LSTM Modeli</option>
           </select>
           <button type="submit" class="btn btn-primary mt-3">Kaydet</button>
         </form>

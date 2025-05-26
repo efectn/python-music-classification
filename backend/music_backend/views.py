@@ -16,8 +16,15 @@ from .models import PredictionHistory
 from music_backend.utils.audio_processor import (
     handle_uploaded_file,
     convert_to_wav,
-    download_youtube_audio
+    download_youtube_audio,
+    load_and_pad_audio,
+    extract_mfcc_segments
 )
+
+model_cnn = tf.keras.models.load_model(f'{settings.MODELS_DIR}/model_cnn.h5')
+model_dnn = tf.keras.models.load_model(f'{settings.MODELS_DIR}/model_dnn.h5')
+model_lstm = tf.keras.models.load_model(f'{settings.MODELS_DIR}/model_lstm.h5')
+model_cnn_rnn = tf.keras.models.load_model(f'{settings.MODELS_DIR}/model_cnn_rnn.h5')
 
 class CustomAuthenticationForm(AuthenticationForm):
     username = forms.CharField(
@@ -86,32 +93,41 @@ def analyze_music(request):
             else:
                 return JsonResponse({'error': 'Geçersiz girdi tipi'}, status=400)
 
-            audio, sr = librosa.load(final_path, sr=22500)
-            mfcc = librosa.feature.mfcc(
-                y=audio,
-                sr=sr,
-                n_fft=2048,
-                hop_length=512,
-                n_mfcc=13
-            ).T
+            segments, sr = load_and_pad_audio(final_path, sample_rate=22500, target_duration=30)
 
-            if mfcc.shape[0] < 88:
-                mfcc = np.pad(mfcc, ((0, 88 - mfcc.shape[0]), (0, 0)))
-            else:
-                mfcc = mfcc[:88, :]
+            model = model_cnn
+            if model_type == 'CNN':
+                model = model_cnn
+            elif model_type == 'DNN':
+                model = model_dnn
+            elif model_type == 'LSTM':
+                model = model_lstm
+            elif model_type == 'CNNRNN':
+                model = model_cnn_rnn
 
-            X_input = mfcc[np.newaxis, ..., np.newaxis]
+            all_mfcc_segments = []
 
-            model = tf.keras.models.load_model(f'{settings.MODELS_DIR}/model_{model_type.lower()}.h5')
-            pred_probs = model.predict(X_input, verbose=0)[0]
+            for segment in segments:
+                mfcc_segments = extract_mfcc_segments(segment, sr)
+                all_mfcc_segments.extend(mfcc_segments)
+
+            segment_predictions = []
+            for mfcc_segment in all_mfcc_segments:
+                X = mfcc_segment[np.newaxis, ...]
+                if model_type == 'CNN':
+                    X = X[..., np.newaxis]
+
+                prediction = model.predict(X)
+                segment_predictions.append(prediction[0])
+
+            average_prediction = np.mean(segment_predictions, axis=0)
 
             genres = ['blues', 'classical', 'country', 'disco', 'hiphop',
                       'jazz', 'metal', 'pop', 'reggae', 'rock']
-            results = {genre: float(pred_probs[i]) * 100 for i, genre in enumerate(genres)}
-            genre_name = max(results, key=results.get)
-            
+
+            results = {genre: float(average_prediction[i]) * 100 for i, genre in enumerate(genres)}
+
             filename=os.path.basename(final_path)
-            
             if title == "":
                 title = filename
 

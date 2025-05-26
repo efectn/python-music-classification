@@ -5,3 +5,7 @@ pytube==15.0.0
 numpy==2.0.0
 joblib==1.4.0
 ffmpeg-python==0.2.0
+tensorflow==2.10.0
+scikit-learn==1.6.1
+scipy==1.15.2
+gunicorn
