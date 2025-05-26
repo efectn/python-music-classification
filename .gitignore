@@ -175,3 +175,7 @@ cython_debug/
 
 dataset/*
 .idea/*
+
+__pycache__/
+*.py[cod]
+*$py.class

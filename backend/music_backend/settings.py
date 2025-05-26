@@ -24,7 +24,7 @@ MODELS_DIR = os.path.join(BASE_DIR, '../models')
 SECRET_KEY = 'mx&rla3h4b04!)^+^tsgd5lk-ulc_p5zrv3864=2a@yf3j4l*r'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'accounts',
+    'music_backend',
 
 ]
 
@@ -140,26 +140,4 @@ LOGOUT_REDIRECT_URL = '/'     # After logout, redirect to home
 
 # Custom settings
 MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50MB
-
-# SSL/HTTPS settings (for production)
-if not DEBUG:
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-
-if DEBUG:
-
-
-    # Development tools (optional)
-    INSTALLED_APPS += [
-        'debug_toolbar',  # If you want Django Debug Toolbar
-    ]
-
-    MIDDLEWARE += [
-        'debug_toolbar.middleware.DebugToolbarMiddleware',
-    ]
-
-    INTERNAL_IPS = ['127.0.0.1']  # For Debug Toolbar
-
 

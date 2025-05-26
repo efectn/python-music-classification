@@ -3,6 +3,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
+from django import forms
 from django.conf import settings
 from django.http import JsonResponse
 from django.core.files import File
@@ -18,6 +19,22 @@ from music_backend.utils.audio_processor import (
     download_youtube_audio
 )
 
+class CustomAuthenticationForm(AuthenticationForm):
+    username = forms.CharField(
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Kullanıcı Adı',
+            'id': 'login-username',
+        })
+    )
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Şifre',
+            'id': 'login-password',
+        })
+    )
+
 def signup(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
@@ -31,21 +48,22 @@ def signup(request):
 
 def user_login(request):
     if request.method == 'POST':
-        form = AuthenticationForm(request, data=request.POST)
+        form = CustomAuthenticationForm(request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
             auth_login(request, user)
             return redirect('home')
     else:
-        form = AuthenticationForm()
+        form = CustomAuthenticationForm()
     return render(request, 'index.html', {'form': form})
 
 def user_logout(request):
     auth_logout(request)
     return redirect('home')
 
-@login_required
 def home(request):
+    if not request.user.is_authenticated:
+        return redirect('login')  # URL pattern name’in 'login' olduğuna dikkat et
     model_type = request.session.get('model_type', 'CNN')
     return render(request, 'upload.html', {'model_type': model_type})
 

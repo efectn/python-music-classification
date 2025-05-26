@@ -19,21 +19,39 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from accounts import views
+from music_backend import views
+
+handler404 = 'music_backend.views.custom_404_view'
 
 urlpatterns = [
-    # Mevcut URL'ler
-    path('admin/', admin.site.urls),
-    path('accounts/', include('accounts.urls')),
-    path('', include('accounts.urls')),  # Ana sayfa için mevcut yapı korundu
+    # Path for the home page (upload page)
+    # This corresponds to LOGIN_REDIRECT_URL = '/' if accounts.urls is included at the project root.
+    path('', views.home, name='home'),
+
+    # Path for user registration (signup)
+    path('signup/', views.signup, name='register'),
+
+    # Path for user login
+    path('login/', views.user_login, name='login'),
+
+    # Path for user logout
+    path('logout/', views.user_logout, name='logout'),
+
+    # Path for the preferences page
+    path('preferences/', views.preferences, name='preferences'),
+
+    # Path for the statistics page
+    path('stats/', views.stats, name='stats'),
+
+    # Path for the analysis page (the page itself, not the AJAX endpoint)
+    path('analysis-page/', views.analysis, name='analysis'),
+
+    # Path for the music analysis AJAX endpoint
+    path('analyze-music/', views.analyze_music, name='analyze_music'),
+
+    # Path for the 'Müzik Tara' / 'Upload' link in navigation, which points to the home/upload page
+    path('upload/', views.home, name='upload'),
+    
+    # pathfor 404
+    path('404/', views.custom_404_view, name='custom_404_view'),
 ]
-
-# MEDIA dosyaları için (DEBUG modda çalışırken EKLENDİ)
-if settings.DEBUG:
-    import debug_toolbar
-
-    urlpatterns += [
-        path('__debug__/', include(debug_toolbar.urls)),
-    ]
-
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
