@@ -90,7 +90,7 @@
 
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container-fluid">
-      <a class="navbar-brand" href="{% url 'accounts:home' %}">Müzik Tespiti</a>
+      <a class="navbar-brand" href="{% url 'home' %}">Müzik Tespiti</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -108,7 +108,7 @@
 
   <section id="register">
 	  <h2 class="text-center mb-4">Kayıt Ol</h2>
-	  <form id="registerForm" method="post" action="{% url 'accounts:register' %}">
+	  <form id="registerForm" method="post" action="{% url 'register' %}">
 	    {% csrf_token %}
 	    {% if form.errors %}
 	      <div class="alert alert-danger">
@@ -161,7 +161,7 @@
 	    <div class="text-center mt-3">
 	      <small class="text-muted">
 	        Zaten hesabınız var mı?
-	        <a href="{% url 'accounts:login' %}" class="text-decoration-none">Giriş yapın</a>
+	        <a href="{% url 'login' %}" class="text-decoration-none">Giriş yapın</a>
 	      </small>
 	    </div>
 	  </form>
@@ -228,7 +228,7 @@
       document.getElementById('password').classList.remove('is-valid', 'is-invalid');
 
       // Redirect to login page
-      window.location.href = "{% url 'accounts:home' %}";
+      window.location.href = "{% url 'home' %}";
     }
 
     document.addEventListener('DOMContentLoaded', () => {

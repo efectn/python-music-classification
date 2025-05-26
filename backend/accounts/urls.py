@@ -1,7 +1,8 @@
 from django.urls import path
 from . import views
 
-app_name = 'accounts'
+app_name = ''
+handler404 = 'music_backend.views.custom_404_view'
 
 urlpatterns = [
     # Path for the home page (upload page)
@@ -31,4 +32,7 @@ urlpatterns = [
 
     # Path for the 'Müzik Tara' / 'Upload' link in navigation, which points to the home/upload page
     path('upload/', views.home, name='upload'),
+    
+    # pathfor 404
+    path('404/', views.custom_404_view, name='custom_404_view'),
 ]

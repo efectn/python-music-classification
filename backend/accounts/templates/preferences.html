@@ -12,16 +12,16 @@
 <body data-theme="light">
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
     <div class="container-fluid">
-      <a class="navbar-brand" href="{% url 'accounts:home' %}">Müzik Tespiti</a>
+      <a class="navbar-brand" href="{% url 'home' %}">Müzik Tespiti</a>
       <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="nav">
         <ul class="navbar-nav ms-auto">
-          <li class="nav-item"><a class="nav-link active fw-bold" href="{% url 'accounts:preferences' %}"><i class="bi bi-sliders"></i> Tercihler</a></li>
-          <li class="nav-item"><a class="nav-link" href="{% url 'accounts:analysis' %}"><i class="bi bi-graph-up"></i> Analizler</a></li>
-          <li class="nav-item"><a class="nav-link" href="{% url 'accounts:stats' %}"><i class="bi bi-bar-chart"></i> İstatistikler</a></li>
-          <li class="nav-item"><a class="nav-link" href="{% url 'accounts:upload' %}"><i class="bi bi-upload"></i> Müzik Tara</a></li>
+          <li class="nav-item"><a class="nav-link active fw-bold" href="{% url 'preferences' %}"><i class="bi bi-sliders"></i> Tercihler</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'analysis' %}"><i class="bi bi-graph-up"></i> Analizler</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'stats' %}"><i class="bi bi-bar-chart"></i> İstatistikler</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'upload' %}"><i class="bi bi-upload"></i> Müzik Tara</a></li>
           <li class="nav-item"><a class="nav-link" href="#" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Çıkış</a></li>
           <li class="nav-item">
             <button class="btn-toggle-theme" onclick="toggleTheme()" title="Tema Değiştir">
@@ -37,7 +37,7 @@
     <div class="card">
       <div class="card-body">
         <h2 class="card-title mb-4">Model Tercihi</h2>
-        <form method="post" action="{% url 'accounts:preferences' %}">
+        <form method="post" action="{% url 'preferences' %}">
           {% csrf_token %}
           <select class="form-select w-50" name="model_type">
             <option value="CNN" {% if request.session.model_type == "CNN" %}selected{% endif %}>CNN Modeli</option>
@@ -72,7 +72,7 @@
     });
 
     function logout() {
-      window.location.href = "{% url 'accounts:home' %}";
+      window.location.href = "{% url 'home' %}";
     }
   </script>
 </body>

@@ -11,7 +11,7 @@ import os
 import librosa
 import numpy as np
 import tensorflow as tf
-from .models import PredictionHistory, UserAudio
+from .models import PredictionHistory
 from music_backend.utils.audio_processor import (
     handle_uploaded_file,
     convert_to_wav,
@@ -24,7 +24,7 @@ def signup(request):
         if form.is_valid():
             user = form.save()
             auth_login(request, user)
-            return redirect('accounts:home')
+            return redirect('home')
     else:
         form = UserCreationForm()
     return render(request, 'register.html', {'form': form})
@@ -35,14 +35,14 @@ def user_login(request):
         if form.is_valid():
             user = form.get_user()
             auth_login(request, user)
-            return redirect('accounts:home')
+            return redirect('home')
     else:
         form = AuthenticationForm()
     return render(request, 'index.html', {'form': form})
 
 def user_logout(request):
     auth_logout(request)
-    return redirect('accounts:home')
+    return redirect('home')
 
 @login_required
 def home(request):
@@ -56,13 +56,15 @@ def analyze_music(request):
             model_type = request.session.get('model_type', 'CNN')
             input_type = request.POST.get('input_type')
             youtube_url = request.POST.get('youtube_url', '')
-
+            title = ""
+            temp_path = None
+            
             if input_type == 'FILE':
                 uploaded_file = request.FILES['audio_file']
                 temp_path = handle_uploaded_file(uploaded_file)
                 final_path = convert_to_wav(temp_path)
             elif input_type == 'YOUTUBE':
-                final_path = download_youtube_audio(youtube_url)
+                final_path, title = download_youtube_audio(youtube_url)
             else:
                 return JsonResponse({'error': 'Geçersiz girdi tipi'}, status=400)
 
@@ -89,29 +91,30 @@ def analyze_music(request):
                       'jazz', 'metal', 'pop', 'reggae', 'rock']
             results = {genre: float(pred_probs[i]) * 100 for i, genre in enumerate(genres)}
             genre_name = max(results, key=results.get)
-
-            user_audio = UserAudio(
-                user=request.user,
-                youtube_url=youtube_url if input_type == 'YOUTUBE' else '',
-                prediction=genre_name
-            )
-
-            with open(final_path, 'rb') as f:
-                user_audio.converted_wav.save(
-                    os.path.basename(final_path),
-                    File(f)
-                )
-            user_audio.save()
+            
+            filename=os.path.basename(final_path)
+            
+            if title == "":
+                title = filename
 
             PredictionHistory.objects.create(
                 user=request.user,
-                audio=user_audio,
                 model_type=model_type,
                 input_type=input_type,
-                input_path=final_path,
+                input_path=title,
+                youtube_url=youtube_url if input_type == 'YOUTUBE' else '',
                 **results
             )
-
+            
+            # Remove temporary file if it exists
+            try:
+                if os.path.exists(final_path):
+                    os.remove(final_path)
+                if temp_path and os.path.exists(temp_path):
+                    os.remove(temp_path)
+            finally:
+                pass
+            
             return JsonResponse(results)
 
         except Exception as e:
@@ -124,7 +127,7 @@ def preferences(request):
     if request.method == "POST":
         model_type = request.POST.get("model_type", "CNN")
         request.session["model_type"] = model_type
-        return redirect("accounts:preferences")
+        return redirect("preferences")
     return render(request, "preferences.html")
 
 @login_required
@@ -146,3 +149,6 @@ def stats(request):
         'history': history,
         'genre_averages': genre_averages,
     })
+    
+def custom_404_view(request, exception=None):
+    return render(request, '404.html', status=404)

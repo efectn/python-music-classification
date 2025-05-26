@@ -1,0 +1,59 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>İstatistikler – Müzik Türü Tespiti</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+  <link href="{% static 'css/styles.css' %}" rel="stylesheet" />
+
+  <style>
+    .btn-toggle-theme {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.2rem;
+    }
+    .btn-toggle-theme:hover {
+      color: #ffc107;
+    }
+  </style>
+</head>
+<body data-theme="light">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="{% url 'home' %}">Müzik Tespiti</a>
+      <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="nav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="{% url 'preferences' %}"><i class="bi bi-sliders"></i> Tercihler</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'analysis' %}"><i class="bi bi-graph-up"></i> Analizler</a></li>
+          <li class="nav-item"><a class="nav-link active fw-bold" href="{% url 'stats' %}"><i class="bi bi-bar-chart"></i> İstatistikler</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'upload' %}"><i class="bi bi-upload"></i> Müzik Tara</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Çıkış</a></li>
+          <li class="nav-item">
+            <button class="btn-toggle-theme" onclick="toggleTheme()" title="Tema Değiştir">
+              <i class="bi bi-moon-fill" id="themeIcon"></i>
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-5 pt-5">
+    <div class="card">
+      <div class="card-body">
+        <h2 class="card-title mb-4">404</h2>
+        <p>Talep ettiğiniz sayfa bulunamadı!</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

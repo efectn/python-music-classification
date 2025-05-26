@@ -93,7 +93,7 @@
   <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container-fluid">
-      <a class="navbar-brand" href="{% url 'accounts:home' %}">Müzik Tespiti</a>
+      <a class="navbar-brand" href="{% url 'home' %}">Müzik Tespiti</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -112,7 +112,7 @@
   <!-- Giriş Kartı -->
   <section id="login">
     <h2 class="text-center mb-4">Giriş Yap</h2>
-    <form method="post" action="{% url 'accounts:login' %}">
+    <form method="post" action="{% url 'login' %}">
       {% csrf_token %}
       {% if form.errors %}
         <div class="alert alert-danger">
@@ -126,7 +126,7 @@
       <div class="text-center mt-3">
         <small class="text-muted">
           Hesabınız yok mu?
-          <a href="{% url 'accounts:register' %}" class="text-decoration-none">Kayıt olun</a>
+          <a href="{% url 'register' %}" class="text-decoration-none">Kayıt olun</a>
         </small>
       </div>
     </form>
@@ -186,7 +186,7 @@
     {#  document.getElementById('loginForm').reset();#}
     {#  document.querySelectorAll('#passwordCriteria li').forEach(li => li.classList.remove('valid'));#}
     {#  document.getElementById('password').classList.remove('is-valid', 'is-invalid');#}
-    {#  window.location.href = '{% url "accounts:preferences" %}';#}
+    {#  window.location.href = '{% url "preferences" %}';#}
     {# }#}
 
     document.addEventListener('DOMContentLoaded', () => {
