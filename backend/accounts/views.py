@@ -1,10 +1,22 @@
+# views.py
 from django.shortcuts import render, redirect
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
+from django.http import JsonResponse
+from django.core.files import File
+from django.db import models
 import os
-import joblib
+import librosa
+import numpy as np
+import tensorflow as tf
+from .models import PredictionHistory, UserAudio
+from music_backend.utils.audio_processor import (
+    handle_uploaded_file,
+    convert_to_wav,
+    download_youtube_audio
+)
 
 def signup(request):
     if request.method == 'POST':
@@ -12,10 +24,10 @@ def signup(request):
         if form.is_valid():
             user = form.save()
             auth_login(request, user)
-            return redirect('home')
+            return redirect('accounts:home')
     else:
         form = UserCreationForm()
-    return render(request, 'accounts/signup.html', {'form': form})
+    return render(request, 'register.html', {'form': form})
 
 def user_login(request):
     if request.method == 'POST':
@@ -23,41 +35,114 @@ def user_login(request):
         if form.is_valid():
             user = form.get_user()
             auth_login(request, user)
-            return redirect('home')
+            return redirect('accounts:home')
     else:
         form = AuthenticationForm()
-    return render(request, 'accounts/login.html', {'form': form})
+    return render(request, 'index.html', {'form': form})
 
 def user_logout(request):
     auth_logout(request)
-    return redirect('home')
-
-def home(request):
-    return render(request, 'accounts/home.html')
-
+    return redirect('accounts:home')
 
 @login_required
-def predict_genre(request):
+def home(request):
+    model_type = request.session.get('model_type', 'CNN')
+    return render(request, 'upload.html', {'model_type': model_type})
+
+@login_required
+def analyze_music(request):
     if request.method == 'POST':
         try:
-            # Model yükleme
-            model_path = os.path.join(settings.MODELS_DIR, 'music_genre_model.pkl')
-            model = joblib.load(model_path)
+            model_type = request.session.get('model_type', 'CNN')
+            input_type = request.POST.get('input_type')
+            youtube_url = request.POST.get('youtube_url', '')
 
-            # Dosya işleme kısmı (Örnek - gerçek implementasyon modelinize bağlı)
-            uploaded_file = request.FILES['music_file']
+            if input_type == 'FILE':
+                uploaded_file = request.FILES['audio_file']
+                temp_path = handle_uploaded_file(uploaded_file)
+                final_path = convert_to_wav(temp_path)
+            elif input_type == 'YOUTUBE':
+                final_path = download_youtube_audio(youtube_url)
+            else:
+                return JsonResponse({'error': 'Geçersiz girdi tipi'}, status=400)
 
-            # Burada dosya işleme ve tahmin kodlarınız olacak
-            # Örnek tahmin:
-            prediction = model.predict([uploaded_file.read()])
+            audio, sr = librosa.load(final_path, sr=22500)
+            mfcc = librosa.feature.mfcc(
+                y=audio,
+                sr=sr,
+                n_fft=2048,
+                hop_length=512,
+                n_mfcc=13
+            ).T
 
-            # Sonucu session'a kaydet
-            request.session['latest_prediction'] = prediction[0]
-            return redirect('home')
+            if mfcc.shape[0] < 88:
+                mfcc = np.pad(mfcc, ((0, 88 - mfcc.shape[0]), (0, 0)))
+            else:
+                mfcc = mfcc[:88, :]
+
+            X_input = mfcc[np.newaxis, ..., np.newaxis]
+
+            model = tf.keras.models.load_model(f'{settings.MODELS_DIR}/model_{model_type.lower()}.h5')
+            pred_probs = model.predict(X_input, verbose=0)[0]
+
+            genres = ['blues', 'classical', 'country', 'disco', 'hiphop',
+                      'jazz', 'metal', 'pop', 'reggae', 'rock']
+            results = {genre: float(pred_probs[i]) * 100 for i, genre in enumerate(genres)}
+            genre_name = max(results, key=results.get)
+
+            user_audio = UserAudio(
+                user=request.user,
+                youtube_url=youtube_url if input_type == 'YOUTUBE' else '',
+                prediction=genre_name
+            )
+
+            with open(final_path, 'rb') as f:
+                user_audio.converted_wav.save(
+                    os.path.basename(final_path),
+                    File(f)
+                )
+            user_audio.save()
+
+            PredictionHistory.objects.create(
+                user=request.user,
+                audio=user_audio,
+                model_type=model_type,
+                input_type=input_type,
+                input_path=final_path,
+                **results
+            )
+
+            return JsonResponse(results)
 
         except Exception as e:
-            # Hata yönetimi
-            print(f"Hata oluştu: {str(e)}")
-            return render(request, 'accounts/predict.html', {'error': str(e)})
+            return JsonResponse({'error': str(e)}, status=500)
 
-    return render(request, 'accounts/predict.html')
+    return JsonResponse({'error': 'Sadece POST isteği kabul edilir'}, status=400)
+
+@login_required
+def preferences(request):
+    if request.method == "POST":
+        model_type = request.POST.get("model_type", "CNN")
+        request.session["model_type"] = model_type
+        return redirect("accounts:preferences")
+    return render(request, "preferences.html")
+
+@login_required
+def analysis(request):
+    # Fetch the user's prediction history, most recent first
+    history = PredictionHistory.objects.filter(user=request.user).order_by('-created_at')
+    return render(request, 'analysis.html', {'history': history})
+
+@login_required
+def stats(request):
+    history = PredictionHistory.objects.filter(user=request.user).order_by('-created_at')
+    # Aggregate average probabilities for each genre
+    genres = ['blues', 'classical', 'country', 'disco', 'hiphop', 'jazz', 'metal', 'pop', 'reggae', 'rock']
+    genre_averages = {}
+    for genre in genres:
+        avg = history.aggregate(avg=models.Avg(genre))[f'avg'] or 0
+        genre_averages[genre] = round(avg, 1)
+    return render(request, 'stats.html', {
+        'history': history,
+        'genre_averages': genre_averages,
+    })

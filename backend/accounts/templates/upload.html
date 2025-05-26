@@ -1,0 +1,265 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Müzik Tara – Müzik Türü Tespiti</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+  <link href="{% static 'css/styles.css' %}" rel="stylesheet" />
+  <style>
+    .btn-toggle-theme {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.2rem;
+    }
+    .btn-toggle-theme:hover {
+      color: #ffc107; /* Bootstrap warning color */
+    }
+    #recordingStatus {
+      font-style: italic;
+      color: #6c757d; /* Bootstrap secondary text color */
+    }
+  </style>
+</head>
+<body data-theme="light">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="{% url 'accounts:home' %}">Müzik Tespiti</a>
+      <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="nav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="{% url 'accounts:preferences' %}"><i class="bi bi-sliders"></i> Tercihler</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'accounts:analysis' %}"><i class="bi bi-graph-up"></i> Analizler</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'accounts:stats' %}"><i class="bi bi-bar-chart"></i> İstatistikler</a></li>
+          <li class="nav-item"><a class="nav-link active fw-bold" href="{% url 'accounts:upload' %}"><i class="bi bi-upload"></i> Müzik Tara</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="logoutUser()"><i class="bi bi-box-arrow-right"></i> Çıkış</a></li>
+          <li class="nav-item">
+            <button class="btn-toggle-theme" onclick="toggleTheme()" title="Tema Değiştir">
+              <i class="bi bi-moon-fill" id="themeIcon"></i>
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-5 pt-5">
+    <div class="card">
+      {% csrf_token %}
+      <div class="card-body">
+        <h2 class="card-title mb-4">Müzik Tara</h2>
+
+        <div class="mb-3">
+          <label for="youtubeUrlInput" class="form-label">YouTube Linki</label>
+          <input type="url" id="youtubeUrlInput" class="form-control" placeholder="https://www.youtube.com/watch?v=..." />
+        </div>
+
+        <div class="mb-3">
+          <label for="audioFileInput" class="form-label">Ses Dosyası Yükle (MP3, WAV, AAC, M4A)</label>
+          <input type="file" id="audioFileInput" class="form-control" accept=".mp3,.wav,.aac,.m4a,audio/*" />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Mikrofondan Kayıt:</label><br>
+          <button class="btn btn-secondary me-2" onclick="startRecording()"><i class="bi bi-mic-fill"></i> Kaydı Başlat</button>
+          <button class="btn btn-danger" onclick="stopRecording()"><i class="bi bi-stop-circle-fill"></i> Kaydı Durdur</button>
+          <p id="recordingStatus" class="mt-2">Kayıt bekleniyor...</p>
+        </div>
+
+        <button class="btn btn-success w-100" onclick="analyzeAudio()"><i class="bi bi-graph-up"></i> Analiz Et</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal fade" id="analysisModal" tabindex="-1" aria-labelledby="analysisModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="analysisModalLabel">Müzik Türü Analizi</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="analysisResultBody">
+          <!-- Sonuç buraya yazılır -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let mediaRecorder;
+    let audioChunks = [];
+    let recordedAudioBlob = null; // Kaydedilen sesi tutmak için
+
+    // CSRF token'ını almak için bir yardımcı fonksiyon
+    function getCsrfToken() {
+      return document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+    }
+
+    function logoutUser() {
+      // Django'nun logout URL'sine yönlendir
+      window.location.href = "{% url 'accounts:logout' %}";
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const body = document.body;
+      const icon = document.getElementById("themeIcon");
+      const currentTheme = body.getAttribute("data-theme");
+      const nextTheme = currentTheme === "light" ? "dark" : "light";
+
+      html.setAttribute("data-bs-theme", nextTheme);
+      body.setAttribute("data-theme", nextTheme);
+      if (icon) {
+        icon.className = nextTheme === "dark" ? "bi bi-sun-fill" : "bi bi-moon-fill";
+      }
+      localStorage.setItem("theme", nextTheme);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const savedTheme = localStorage.getItem("theme") || "light";
+      document.documentElement.setAttribute("data-bs-theme", savedTheme);
+      document.body.setAttribute("data-theme", savedTheme);
+      const icon = document.getElementById("themeIcon");
+      if (icon) {
+        icon.className = savedTheme === "dark" ? "bi bi-sun-fill" : "bi bi-moon-fill";
+      }
+    });
+
+    async function startRecording() {
+      const recordingStatusEl = document.getElementById('recordingStatus');
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        recordedAudioBlob = null; // Önceki kaydı temizle
+        recordingStatusEl.textContent = "Kayıt yapılıyor...";
+        recordingStatusEl.style.color = "red";
+
+        mediaRecorder.ondataavailable = event => {
+          if (event.data.size > 0) {
+            audioChunks.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = () => {
+          recordedAudioBlob = new Blob(audioChunks, { type: 'audio/wav' }); // WAV olarak kaydetmeyi deneyelim
+          recordingStatusEl.textContent = "Kayıt tamamlandı. Analiz etmeye hazır.";
+          recordingStatusEl.style.color = "green";
+          // Kayıt durunca stream'i serbest bırak
+          stream.getTracks().forEach(track => track.stop());
+        };
+
+        mediaRecorder.start();
+      } catch (err) {
+        console.error("Mikrofon erişim hatası:", err);
+        recordingStatusEl.textContent = "Mikrofon erişilemedi veya hata oluştu.";
+        recordingStatusEl.style.color = "red";
+        alert("Mikrofon erişiminde bir hata oluştu: " + err.message);
+      }
+    }
+
+    function stopRecording() {
+      const recordingStatusEl = document.getElementById('recordingStatus');
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+      } else {
+        recordingStatusEl.textContent = "Aktif bir kayıt bulunmuyor.";
+        recordingStatusEl.style.color = "orange";
+      }
+    }
+
+    async function analyzeAudio() {
+      const csrfToken = getCsrfToken();
+      const youtubeUrl = document.getElementById('youtubeUrlInput').value.trim();
+      const audioFile = document.getElementById('audioFileInput').files[0];
+      const analysisResultBody = document.getElementById('analysisResultBody');
+      const modal = new bootstrap.Modal(document.getElementById('analysisModal'));
+
+      analysisResultBody.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Analiz ediliyor...</span></div><p>Analiz ediliyor...</p></div>';
+      modal.show();
+
+      const formData = new FormData();
+      formData.append('csrfmiddlewaretoken', csrfToken);
+      formData.append('model_type', modelType);
+
+      let inputType = '';
+      let hasInput = false;
+
+      if (youtubeUrl) {
+        formData.append('input_type', 'YOUTUBE');
+        formData.append('youtube_url', youtubeUrl);
+        inputType = 'YouTube Linki';
+        hasInput = true;
+      } else if (audioFile) {
+        formData.append('input_type', 'FILE');
+        formData.append('audio_file', audioFile);
+        inputType = `Dosya: ${audioFile.name}`;
+        hasInput = true;
+      } else if (recordedAudioBlob) {
+        formData.append('input_type', 'FILE'); // Backend bunu dosya olarak işleyebilir
+        formData.append('audio_file', recordedAudioBlob, 'recorded_audio.wav'); // Dosya adı ekle
+        inputType = 'Kaydedilen Ses';
+        hasInput = true;
+      } else {
+        analysisResultBody.innerHTML = '<p class="text-danger">Lütfen bir YouTube linki girin, bir dosya seçin veya ses kaydedin.</p>';
+        return;
+      }
+
+      try {
+        const response = await fetch("{% url 'accounts:analyze_music' %}", {
+          method: 'POST',
+          body: formData,
+          // 'X-CSRFToken': csrfToken // FormData ile gönderildiğinde genellikle gereksizdir
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.error) {
+            analysisResultBody.innerHTML = `<p class="text-danger">Analiz hatası: ${data.error}</p>`;
+          } else {
+            let resultsHtml = `<h5>Analiz Sonuçları (${modelType} Modeli)</h5>`;
+            resultsHtml += `<p><strong>Giriş:</strong> ${inputType}</p>`;
+
+            // En yüksek olasılıklı türü bul
+            let topGenre = '';
+            let maxProb = 0;
+            for (const genre in data) {
+              if (data[genre] > maxProb) {
+                maxProb = data[genre];
+                topGenre = genre;
+              }
+            }
+            resultsHtml += `<p><strong>En Olası Tür: <span class="fw-bold text-primary">${topGenre.charAt(0).toUpperCase() + topGenre.slice(1)}</span> (${maxProb.toFixed(1)}%)</strong></p>`;
+
+            resultsHtml += '<h6>Tüm Tür Olasılıkları:</h6><ul class="list-group">';
+            for (const genre in data) {
+              resultsHtml += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                                ${genre.charAt(0).toUpperCase() + genre.slice(1)}
+                                <span class="badge bg-info rounded-pill">${parseFloat(data[genre]).toFixed(1)}%</span>
+                              </li>`;
+            }
+            resultsHtml += '</ul>';
+            analysisResultBody.innerHTML = resultsHtml;
+          }
+        } else {
+          const errorData = await response.json().catch(() => ({ error: 'Sunucu hatası veya geçersiz JSON yanıtı.' }));
+          analysisResultBody.innerHTML = `<p class="text-danger">Sunucu hatası: ${response.status} ${response.statusText}. ${errorData.error || ''}</p>`;
+        }
+      } catch (error) {
+        console.error('Fetch error:', error);
+        analysisResultBody.innerHTML = `<p class="text-danger">İstek gönderilirken bir ağ hatası oluştu: ${error.message}</p>`;
+      }
+    }
+  </script>
+</body>
+</html>

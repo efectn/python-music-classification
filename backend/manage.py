@@ -2,10 +2,15 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+from pathlib import Path  # EKLENDİ
 
 
 def main():
     """Run administrative tasks."""
+    # Proje kök dizinini Python path'ine ekle
+    BASE_DIR = Path(__file__).resolve().parent  # <--- YENİ EKLENDİ
+    sys.path.append(str(BASE_DIR))  # <--- YENİ EKLENDİ
+
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'music_backend.settings')
     try:
         from django.core.management import execute_from_command_line

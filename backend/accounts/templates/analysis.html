@@ -1,0 +1,173 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Analizler – Müzik Türü Tespiti</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+  <link href="{% static 'css/styles.css' %}" rel="stylesheet" />
+  <style>
+    .btn-toggle-theme {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.2rem;
+    }
+    .btn-toggle-theme:hover {
+      color: #ffc107;
+    }
+    .table-responsive {
+      margin-top: 1rem;
+    }
+    .modal-body ul {
+      padding-left: 0;
+      list-style: none;
+    }
+    .modal-body li {
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body data-theme="light">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="{% url 'accounts:home' %}">Müzik Tespiti</a>
+      <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="nav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="{% url 'accounts:preferences' %}"><i class="bi bi-sliders"></i> Tercihler</a></li>
+          <li class="nav-item"><a class="nav-link active fw-bold" href="{% url 'accounts:analysis' %}"><i class="bi bi-graph-up"></i> Analizler</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'accounts:stats' %}"><i class="bi bi-bar-chart"></i> İstatistikler</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'accounts:upload' %}"><i class="bi bi-upload"></i> Müzik Tara</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'accounts:logout' %}"><i class="bi bi-box-arrow-right"></i> Çıkış</a></li>
+          <li class="nav-item">
+            <button class="btn-toggle-theme" onclick="toggleTheme()" title="Tema Değiştir">
+              <i class="bi bi-moon-fill" id="themeIcon"></i>
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-5 pt-5">
+    <div class="card">
+      <div class="card-body">
+        <h2 class="card-title mb-4">Geçmiş Analizler</h2>
+        {% if history %}
+        <div class="table-responsive">
+          <table class="table table-striped align-middle">
+            <thead>
+              <tr>
+{#                <th>Tarih</th>#}
+                <th>Model</th>
+                <th>Giriş Tipi</th>
+                <th>Giriş</th>
+                <th>En Yüksek Tür</th>
+                <th>Detay</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in history %}
+              <tr>
+{#                <td>{{ item.created_at|date:"d.m.Y H:i" }}</td>#}
+                <td>{{ item.model_type }}</td>
+                <td>{{ item.input_type }}</td>
+                <td>
+                    {% if item.input_type == "YOUTUBE" %}
+                        <a href="{{ item.input_path }}" target="_blank">{{ item.input_path }}</a>
+                    {% else %}
+                        Dosya
+                    {% endif %}
+                </td>
+                <td>{{ item.top_genre }}</td>
+                <td>
+                  <button class="btn btn-sm btn-info" onclick="showDetails({{ item.id }})">Detay</button>
+                  <script type="application/json" id="details-{{ item.id }}">
+                    {
+                      "blues": {{ item.blues }},
+                      "classical": {{ item.classical }},
+                      "country": {{ item.country }},
+                      "disco": {{ item.disco }},
+                      "hiphop": {{ item.hiphop }},
+                      "jazz": {{ item.jazz }},
+                      "metal": {{ item.metal }},
+                      "pop": {{ item.pop }},
+                      "reggae": {{ item.reggae }},
+                      "rock": {{ item.rock }}
+                    }
+                  </script>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <p>Henüz analiz geçmişiniz yok.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Detay Modalı -->
+  <div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="detailsModalLabel">Tür Olasılıkları</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+        </div>
+        <div class="modal-body" id="detailsModalBody">
+          <!-- Genre details will be inserted here -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function showDetails(id) {
+      const data = JSON.parse(document.getElementById('details-' + id).textContent);
+      let html = '<ul class="list-group">';
+      for (const [genre, value] of Object.entries(data)) {
+        html += `<li class="list-group-item d-flex justify-content-between align-items-center">
+          ${genre.charAt(0).toUpperCase() + genre.slice(1)}
+          <span class="badge bg-info rounded-pill">${parseFloat(value).toFixed(1)}%</span>
+        </li>`;
+      }
+      html += '</ul>';
+      document.getElementById('detailsModalBody').innerHTML = html;
+      const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
+      modal.show();
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const body = document.body;
+      const icon = document.getElementById("themeIcon");
+      const current = body.getAttribute("data-theme");
+      const next = current === "light" ? "dark" : "light";
+      html.setAttribute("data-bs-theme", next);
+      body.setAttribute("data-theme", next);
+      if (icon) icon.className = next === "dark" ? "bi bi-sun-fill" : "bi bi-moon-fill";
+      localStorage.setItem("theme", next);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const saved = localStorage.getItem("theme") || "light";
+      document.documentElement.setAttribute("data-bs-theme", saved);
+      document.body.setAttribute("data-theme", saved);
+      const icon = document.getElementById("themeIcon");
+      if (icon) icon.className = saved === "dark" ? "bi bi-sun-fill" : "bi bi-moon-fill";
+    });
+  </script>
+</body>
+</html>
