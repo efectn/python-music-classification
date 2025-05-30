@@ -7,7 +7,9 @@ services:
     volumes:
       - .:/app
     ports:
-      - "8000:8000"
+      - "8080:8000"
     environment:
       - PYTHONUNBUFFERED=1
+      - MODELS_DIR=/app/models
+      - PYTHONPATH=/app/backend
     command: gunicorn music_backend.wsgi:application --bind 0.0.0.0:8000

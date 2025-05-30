@@ -23,8 +23,13 @@ from music_backend.utils.audio_processor import (
 
 model_cnn = tf.keras.models.load_model(f'{settings.MODELS_DIR}/model_cnn.h5')
 model_dnn = tf.keras.models.load_model(f'{settings.MODELS_DIR}/model_dnn.h5')
-model_lstm = tf.keras.models.load_model(f'{settings.MODELS_DIR}/model_lstm.h5')
-model_cnn_rnn = tf.keras.models.load_model(f'{settings.MODELS_DIR}/model_cnn_rnn.h5')
+
+try:
+    model_lstm = tf.keras.models.load_model(f'{settings.MODELS_DIR}/model_lstm.h5')
+    model_cnn_rnn = tf.keras.models.load_model(f'{settings.MODELS_DIR}/model_cnn_rnn.h5')
+except Exception as e:
+    model_lstm = tf.keras.models.load_model(f'{settings.MODELS_DIR}/model_cnn.h5')
+    model_cnn_rnn = tf.keras.models.load_model(f'{settings.MODELS_DIR}/model_cnn.h5')
 
 class CustomAuthenticationForm(AuthenticationForm):
     username = forms.CharField(
