@@ -23,9 +23,10 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Proje dosyaları
 COPY backend/* .
+COPY models/*.h5 ./models
 
 # Port
 EXPOSE 8000
 
 # Başlatma komutu
-CMD ["gunicorn", "music_backend.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["MODELS_DIR=/app/models", "gunicorn", "music_backend.wsgi:application", "--bind", "0.0.0.0:8000"]
